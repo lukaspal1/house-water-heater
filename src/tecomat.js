@@ -58,16 +58,32 @@ export class Tecomat {
   }
 
   async read(page = 'UVOD.XML') {
-    const xml = await this.fetchPage(page);
-    const values = {};
-    for (const [, name, value] of xml.matchAll(/<INPUT NAME="([^"]+)" VALUE="([^"]*)"/g)) {
-      values[name] = value;
-    }
-    return values;
+    return parseInputs(await this.fetchPage(page));
   }
 
   // The web UI posts the whole "name=value" pair through encodeURIComponent.
+  // The controller answers with the page's values after the write.
   async write(name, value, page = 'UVOD.XML') {
-    await this.fetchPage(page, { method: 'POST', body: encodeURIComponent(`${name}=${value}`) });
+    return parseInputs(await this.fetchPage(page, { method: 'POST', body: encodeURIComponent(`${name}=${value}`) }));
   }
+
+  // Presses an arrow button: sets it to 1 and lets the controller step the value
+  // and clear the button. Clears it ourselves if the controller has not.
+  async pulse(name, page) {
+    let values = await this.write(name, 1, page);
+    if (values[name] === '1') {
+      await new Promise((r) => setTimeout(r, 300));
+      values = await this.read(page);
+      if (values[name] === '1') values = await this.write(name, 0, page);
+    }
+    return values;
+  }
+}
+
+function parseInputs(xml) {
+  const values = {};
+  for (const [, name, value] of xml.matchAll(/<INPUT NAME="([^"]+)" VALUE="([^"]*)"/g)) {
+    values[name] = value;
+  }
+  return values;
 }

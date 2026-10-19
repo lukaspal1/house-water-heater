@@ -32,4 +32,9 @@ Open http://localhost:8080. History is stored in `data/history.jsonl`.
 - Login: get a `SoftPLC` cookie from `/syswww/login.xml`, then `POST /syswww/LOGIN.XML`
   with `USER` and `PASS = sha1(cookie + password)`.
 
-Known values are listed in `FIELDS` and `SWITCHES` in [src/server.js](src/server.js).
+- Arrow buttons are separate values: write `1` and the controller steps the setting by its
+  own amount, then clears the arrow back to `0`.
+
+Known values are listed in `FIELDS` and `SWITCHES` in [src/server.js](src/server.js), and every
+setting from the controller's other pages (hot water, heating, heating curve, night mode,
+circulation, summer mode, weather saving, usage chart) in [src/settings.js](src/settings.js).

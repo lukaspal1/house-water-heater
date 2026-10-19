@@ -24,6 +24,7 @@
     --series-1: #2a78d6;
     --series-2: #eb6834;
     --series-3: #1baf7a;
+    --series-4: #8a5cd1;
     --good: #0ca30c;
     --critical: #d03b3b;
     --switch-off: #c9c7c0;
@@ -43,6 +44,7 @@
       --series-1: #3987e5;
       --series-2: #d95926;
       --series-3: #199e70;
+      --series-4: #a07ce6;
       --switch-off: #46463f;
       --shadow: none;
     }
@@ -60,6 +62,7 @@
     --series-1: #3987e5;
     --series-2: #d95926;
     --series-3: #199e70;
+    --series-4: #a07ce6;
     --switch-off: #46463f;
     --shadow: none;
   }
@@ -251,6 +254,100 @@
     font-size: 14px;
   }
   .error-banner.show { display: block; }
+
+  /* ---------- tabs ---------- */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin: 0 -16px 16px;
+    padding: 0 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs button {
+    flex: none;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 14px;
+    min-height: 38px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] { background: var(--text-primary); border-color: var(--text-primary); color: var(--bg); }
+  [data-panel][hidden] { display: none; }
+
+  /* ---------- settings ---------- */
+  .stack { display: grid; gap: 12px; }
+  @media (min-width: 720px) { .stack.two { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+  .card h2 { margin-bottom: 4px; }
+  .card .hint { font-size: 13px; color: var(--text-muted); margin: 0 0 4px; }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 52px;
+    padding: 6px 0;
+    border-top: 1px solid var(--border);
+  }
+  .row:first-of-type { border-top: 0; }
+  .row-label { min-width: 0; font-size: 15px; }
+  .row-label .hint { margin: 2px 0 0; }
+  .row-value { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .stepper { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+  .stepper output {
+    min-width: 72px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .stepper button {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .stepper button:active { background: var(--grid); }
+  .stepper.busy output { opacity: 0.5; }
+  .stepper button:disabled, .seg button:disabled { opacity: 0.5; cursor: progress; }
+  .lamp { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+  .lamp::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--switch-off); }
+  .lamp.on::before { background: var(--accent); }
+
+  .sched-group { padding-top: 10px; }
+  .sched-group + .sched-group { border-top: 1px solid var(--border); margin-top: 6px; }
+  .sched-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 600; font-size: 14px; }
+  .strip { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin: 8px 0 2px; background: var(--grid); }
+  .strip i { display: block; height: 100%; }
+  .strip i.c { background: var(--series-2); }
+  .strip i.e { background: var(--grid); }
+  .strip-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .sched-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
+  .seg.mode button { min-width: 74px; }
+  .legend-inline { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 400; color: var(--text-muted); }
+  .legend-inline i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+
+  #usage { display: block; width: 100%; height: 180px; }
+  #usage text { font-size: 11px; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .note {
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 6px 0;
+  }
 </style>
 </head>
 <body>
@@ -262,6 +359,14 @@
 
   <div class="error-banner" id="error" role="alert"></div>
 
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="overview" aria-selected="true">Overview</button>
+    <button role="tab" data-tab="hotwater" aria-selected="false">Hot water</button>
+    <button role="tab" data-tab="heating" aria-selected="false">Heating</button>
+    <button role="tab" data-tab="settings" aria-selected="false">Settings</button>
+  </nav>
+
+  <div data-panel="overview">
   <div class="chips" id="chips"></div>
 
   <div class="grid">
@@ -287,6 +392,12 @@
     </section>
 
     <section class="card">
+      <p class="label">Indoor</p>
+      <div class="value" id="roomTemp">–</div>
+      <div class="sub" id="roomTemp-sub"></div>
+    </section>
+
+    <section class="card">
       <p class="label">Outdoor</p>
       <div class="value" id="outdoorTemp">–</div>
     </section>
@@ -294,21 +405,35 @@
     <section class="card">
       <p class="label">Heating water</p>
       <div class="value" id="heatingTemp">–</div>
-      <div class="sub">Ekvitermní křivka</div>
+      <div class="sub">set by the heating curve</div>
     </section>
 
-    <section class="card wide">
+    <section class="card">
+      <p class="label">Heat pump used today</p>
+      <div class="value" id="usageToday">–</div>
+      <div class="sub" id="usageNow"></div>
+    </section>
+
+    <section class="card">
       <p class="label">Energy used: heating</p>
       <div class="value" id="kwhHeating">–</div>
       <div class="sub" id="kwhHeating-delta"></div>
     </section>
 
-    <section class="card wide">
+    <section class="card">
       <p class="label">Energy used: hot water</p>
       <div class="value" id="kwhTuv">–</div>
       <div class="sub" id="kwhTuv-delta"></div>
     </section>
   </div>
+
+  <section class="card section">
+    <div class="chart-head">
+      <h2>Heat pump power today</h2>
+      <span class="sub" id="usage-peak"></span>
+    </div>
+    <svg id="usage" role="img" aria-label="Heat pump power in half-hour steps since midnight"></svg>
+  </section>
 
   <section class="card section">
     <div class="chart-head">
@@ -330,6 +455,11 @@
       <div class="table-scroll"><table id="table"></table></div>
     </details>
   </section>
+  </div>
+
+  <div data-panel="hotwater" class="stack two" hidden></div>
+  <div data-panel="heating" class="stack two" hidden></div>
+  <div data-panel="settings" class="stack two" hidden></div>
 </main>
 
 <script>
@@ -337,6 +467,7 @@ const SERIES = [
   { key: 'tuvTemp', label: 'Hot water', color: 'var(--series-1)' },
   { key: 'heatingTemp', label: 'Heating water', color: 'var(--series-2)' },
   { key: 'outdoorTemp', label: 'Outdoor', color: 'var(--series-3)' },
+  { key: 'roomTemp', label: 'Indoor', color: 'var(--series-4)' },
 ];
 const SWITCH_LABELS = { tuv: 'hot water', heatpump: 'the heat pump' };
 const $ = (id) => document.getElementById(id);
@@ -393,8 +524,13 @@ function render(s) {
   if (s.summerMode) chips.push('☀ Summer mode');
   if (s.circuit1) chips.push('Circuit 1 active');
   if (s.plcTime) chips.push(`Controller clock ${s.plcTime}`);
+  const v = settings?.values || {};
+  if (v['main.night.active']) chips.push('🌙 Night mode');
+  if (v['main.backupStage1']) chips.push('Backup heater running');
+  if (v['main.serviceDue']) chips.push('⚠ Service due');
   $('chips').replaceChildren(...chips.map((t) => Object.assign(document.createElement('span'), { className: 'chip', textContent: t })));
   renderEnergyDeltas();
+  renderSettings();
 }
 
 // ---------- switches (tap → confirm → write) ----------
@@ -620,13 +756,288 @@ function renderTable() {
 }
 
 let resizeTimer;
-window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawChart, 150); });
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { drawChart(); drawUsage(); }, 150); });
+
+// ---------- tabs ----------
+function showTab(name) {
+  document.querySelectorAll('[data-tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === name));
+  document.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== name; });
+  try { localStorage.setItem('tab', name); } catch {}
+  if (name === 'overview') { drawChart(); drawUsage(); }
+}
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+// ---------- settings panels ----------
+// Building blocks. Each returns HTML; values are filled in by renderSettings().
+const step = (id, label, { unit = '', digits = 0, hint = '' } = {}) => `
+  <div class="row"><div class="row-label">${label}${hint ? `<p class="hint">${hint}</p>` : ''}</div>
+    <div class="stepper" data-stepper="${id}">
+      <button data-dir="down" aria-label="${label}: lower">−</button>
+      <output data-val="${id}" data-unit="${unit}" data-digits="${digits}">–</output>
+      <button data-dir="up" aria-label="${label}: raise">+</button>
+    </div></div>`;
+const toggle = (id, label, { hint = '', confirm = '' } = {}) => `
+  <div class="row"><div class="row-label">${label}${hint ? `<p class="hint">${hint}</p>` : ''}</div>
+    <button class="switch" role="switch" aria-checked="false" aria-label="${label}" data-toggle="${id}" data-confirm-text="${confirm}" disabled></button></div>`;
+const info = (id, label, { unit = '', digits = 1, on = '', off = '' } = {}) => `
+  <div class="row"><div class="row-label">${label}</div>
+    ${on ? `<span class="lamp" data-lamp="${id}" data-on="${on}" data-off="${off}">–</span>`
+         : `<span class="row-value" data-val="${id}" data-unit="${unit}" data-digits="${digits}">–</span>`}</div>`;
+const pair = (id, label, a, b, { hint = '', confirm = '' } = {}) => `
+  <div class="row"><div class="row-label">${label}${hint ? `<p class="hint">${hint}</p>` : ''}</div>
+    <div class="seg mode" data-pair="${id}" data-confirm-text="${confirm}">
+      <button data-on="1" aria-pressed="false">${a}</button><button data-on="0" aria-pressed="false">${b}</button></div></div>`;
+const card = (title, body, hint = '') => `<section class="card"><h2>${title}</h2>${hint ? `<p class="hint">${hint}</p>` : ''}${body}</section>`;
+
+const GROUPS = [['wd', 'Mon – Fri'], ['we', 'Sat – Sun']];
+function schedule(prefix, title, hint) {
+  const groups = GROUPS.map(([g, label]) => `
+    <div class="sched-group" data-sched="${prefix}.${g}">
+      <div class="sched-head">${label}<span class="legend-inline"><span><i style="background:var(--series-2)"></i>Comfort</span><span><i style="background:var(--grid)"></i>Eco</span></span></div>
+      <div class="strip" data-strip="${prefix}.${g}"></div>
+      <div class="strip-axis"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+      ${[0, 1, 2].map((n) => `
+        <div class="sched-row">
+          <div class="stepper" data-stepper="${prefix}.${g}${n}.time">
+            <button data-dir="down" aria-label="${label} switch ${n + 1}: earlier">−</button>
+            <output data-val="${prefix}.${g}${n}.time">–</output>
+            <button data-dir="up" aria-label="${label} switch ${n + 1}: later">+</button>
+          </div>
+          <div class="seg mode" data-pair="${prefix}.${g}${n}.comfort">
+            <button data-on="1" aria-pressed="false">Comfort</button><button data-on="0" aria-pressed="false">Eco</button></div>
+        </div>`).join('')}
+    </div>`).join('');
+  return card(title, groups, hint);
+}
+
+function circulation() {
+  return card('Circulation pump', GROUPS.map(([g, label]) =>
+    toggle(`circ.${g}.on`, `${label}`, { hint: 'Keeps hot water moving to the taps' }) +
+    step(`circ.${g}.from`, 'From') + step(`circ.${g}.to`, 'Until')).join(''),
+    'Runs between these times on the days it is switched on.');
+}
+
+document.querySelector('[data-panel="hotwater"]').innerHTML = [
+  card('Tank', info('tuv.tank', 'Temperature now', { unit: '°C' }) +
+    info('tuv.heating', 'Heating the tank', { on: 'Yes', off: 'No' }) +
+    info('tuv.comfortMode', 'Mode now', { on: 'Comfort', off: 'Eco' })),
+  card('Target temperature', step('tuv.comfort', 'Comfort', { unit: '°C', digits: 1 }) + step('tuv.eco', 'Eco', { unit: '°C', digits: 1 }),
+    'The tank is kept at the Comfort or Eco temperature depending on the schedule.'),
+  schedule('tuv', 'Schedule', 'At each time the tank switches to Comfort or Eco.'),
+  circulation(),
+].join('');
+
+document.querySelector('[data-panel="heating"]').innerHTML = [
+  card('Room', info('heat.roomTemp', 'Temperature now', { unit: '°C' }) +
+    info('heat.heating', 'Heating now', { on: 'Yes', off: 'No' }) +
+    info('heat.comfortMode', 'Mode now', { on: 'Comfort', off: 'Eco' }) +
+    toggle('heat.zoneOn', 'Room heating', { confirm: 'room heating' }) +
+    pair('main.heatingMode', 'Season', 'Heating', 'Cooling', { confirm: 'season' })),
+  card('Target room temperature', step('heat.comfort', 'Comfort', { unit: '°C', digits: 1 }) + step('heat.eco', 'Eco', { unit: '°C', digits: 1 })),
+  schedule('heat', 'Schedule', 'At each time the room switches to Comfort or Eco.'),
+  card('Heating curve',
+    info('curve.target', 'Heating water target now', { unit: '°C', digits: 0 }) +
+    step('curve.outdoorCold', 'Cold outdoor point', { unit: '°C' }) +
+    step('curve.waterAtCold', 'Water at cold point', { unit: '°C' }) +
+    step('curve.outdoorWarm', 'Warm outdoor point', { unit: '°C' }) +
+    step('curve.waterAtWarm', 'Water at warm point', { unit: '°C' }) +
+    step('main.curveCorrection', 'Correction', { unit: '°C', digits: 1, hint: 'Shifts the whole curve up or down' }),
+    'The colder it is outside, the warmer the heating water. The two points set the line in between.'),
+  card('Cooling', step('curve.coolingTarget', 'Target water temperature', { unit: '°C' }),
+    'Used in cooling season. The same for all heating circuits.'),
+].join('');
+
+document.querySelector('[data-panel="settings"]').innerHTML = [
+  card('Night mode', toggle('main.night.enabled', 'Night mode') +
+    info('main.night.active', 'Active now', { on: 'Yes', off: 'No' }) +
+    step('main.night.start', 'Starts') + step('main.night.end', 'Ends')),
+  card('Summer mode', info('gen.season', 'Now', { on: 'Summer (no heating)', off: 'Winter' }) +
+    info('gen.outdoorAvg48h', 'Outdoor average, last 48 h', { unit: '°C' }) +
+    step('gen.summerThreshold', 'Switch to summer above', { unit: '°C' }),
+    'Heating stops when the 48-hour outdoor average is above this temperature.'),
+  card('Weather-based saving',
+    `<p class="note">This uses the weather forecast, which the controller downloads from Yahoo. Yahoo shut that service down, so the controller has no forecast and this probably does nothing.</p>` +
+    step('save.maxRoomDrop', 'Let rooms cool by', { unit: '°C', digits: 1 }) +
+    step('save.minOutdoorDiff', 'Min. outdoor difference', { unit: '°C', hint: 'To turn saving on' }) +
+    step('save.sunriseOffset', 'Sunrise offset', { hint: 'Saving ends this long after sunrise' }),
+    'When tomorrow looks warm, rooms are allowed to cool overnight instead of being heated.'),
+  card('Controller', info('gen.date', 'Date') + info('gen.clock', 'Clock')),
+].join('');
+
+let settings = null;
+
+// Values the panels show that come from the live state, not the settings pages.
+function derivedValues(v) {
+  return {
+    ...v,
+    'tuv.tank': state?.tuvTemp ?? null,
+    'gen.season': state?.summerMode ?? null,
+    'gen.clock': state?.plcTime ?? null,
+  };
+}
+
+function fmtVal(el, v) {
+  if (v == null) return '–';
+  if (typeof v !== 'number') return v;
+  const unit = el.dataset.unit || '';
+  return `${v.toFixed(Number(el.dataset.digits || 0))}${unit ? ' ' + unit : ''}`;
+}
+
+function renderSettings() {
+  if (!settings) return;
+  const v = derivedValues(settings.values);
+  document.querySelectorAll('[data-val]').forEach((el) => { el.textContent = fmtVal(el, v[el.dataset.val]); });
+  document.querySelectorAll('[data-lamp]').forEach((el) => {
+    const on = v[el.dataset.lamp];
+    el.classList.toggle('on', !!on);
+    el.textContent = on == null ? '–' : on ? el.dataset.on : el.dataset.off;
+  });
+  document.querySelectorAll('[data-toggle]').forEach((el) => {
+    if (el.dataset.busy) return;
+    el.setAttribute('aria-checked', !!v[el.dataset.toggle]);
+    el.disabled = v[el.dataset.toggle] == null;
+  });
+  document.querySelectorAll('[data-pair]').forEach((el) => {
+    const on = v[el.dataset.pair];
+    el.querySelectorAll('button').forEach((b) => {
+      b.setAttribute('aria-pressed', on != null && (b.dataset.on === '1') === on);
+      if (!el.dataset.busy) b.disabled = on == null;
+    });
+  });
+  document.querySelectorAll('[data-strip]').forEach((el) => renderStrip(el, el.dataset.strip, v));
+
+  const u = settings.usage;
+  $('usageToday').innerHTML = u ? `${fmt(u.totalKwh)}<small>kWh</small>` : '–';
+  $('usageNow').textContent = u ? `${fmt(u.nowKw)} kW right now` : '';
+  $('roomTemp').innerHTML = `${fmt(v['heat.roomTemp'])}<small>°C</small>`;
+  $('roomTemp-sub').textContent = v['heat.comfort'] == null ? '' :
+    `target ${fmt(v[v['heat.comfortMode'] ? 'heat.comfort' : 'heat.eco'])} °C (${v['heat.comfortMode'] ? 'Comfort' : 'Eco'})`;
+  drawUsage();
+}
+
+// Draws a 24 h bar for one day group: each switch time sets Comfort or Eco until
+// the next one. Before the first switch of the day the last one still applies.
+function renderStrip(el, key, v) {
+  const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
+  const events = [0, 1, 2]
+    .map((n) => ({ t: v[`${key}${n}.time`], c: v[`${key}${n}.comfort`] }))
+    .filter((e) => e.t && e.c != null)
+    .map((e) => ({ m: toMin(e.t), c: e.c }))
+    .sort((a, b) => a.m - b.m);
+  if (!events.length) { el.replaceChildren(); return; }
+  const parts = [];
+  let at = 0, mode = events[events.length - 1].c;
+  for (const e of [...events, { m: 1440 }]) {
+    if (e.m > at) parts.push(`<i class="${mode ? 'c' : 'e'}" style="width:${((e.m - at) / 1440) * 100}%"></i>`);
+    at = e.m;
+    mode = e.c;
+  }
+  el.innerHTML = parts.join('');
+}
+
+async function loadSettings() {
+  try {
+    const res = await fetch('api/settings', { cache: 'no-store' });
+    settings = await res.json();
+    renderSettings();
+  } catch {}
+}
+
+async function postSetting(path, body) {
+  const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Request failed');
+  settings = json;
+  renderSettings();
+}
+
+document.addEventListener('click', async (e) => {
+  const stepBtn = e.target.closest('[data-stepper] button');
+  if (stepBtn) {
+    const box = stepBtn.closest('[data-stepper]');
+    box.classList.add('busy');
+    box.querySelectorAll('button').forEach((b) => { b.disabled = true; });
+    try {
+      await postSetting('api/settings/step', { id: box.dataset.stepper, dir: stepBtn.dataset.dir });
+    } catch (err) {
+      alert(`Could not change the setting: ${err.message}`);
+    } finally {
+      box.classList.remove('busy');
+      box.querySelectorAll('button').forEach((b) => { b.disabled = false; });
+    }
+    return;
+  }
+
+  const sw = e.target.closest('[data-toggle]');
+  const pairBtn = e.target.closest('[data-pair] button');
+  if (!sw && !pairBtn) return;
+  const el = sw || pairBtn.closest('[data-pair]');
+  const id = sw ? sw.dataset.toggle : el.dataset.pair;
+  const on = sw ? sw.getAttribute('aria-checked') !== 'true' : pairBtn.dataset.on === '1';
+  if (!sw && settings?.values[id] === on) return;
+  const what = el.dataset.confirmText;
+  const label = sw ? (on ? 'ON' : 'OFF') : pairBtn.textContent;
+  if (what && !confirm(`Change ${what} to ${label}?`)) return;
+  el.dataset.busy = '1';
+  (sw ? [sw] : el.querySelectorAll('button')).forEach((b) => { b.disabled = true; });
+  try {
+    await postSetting('api/settings/toggle', { id, on });
+  } catch (err) {
+    alert(`Could not change the setting: ${err.message}`);
+  } finally {
+    delete el.dataset.busy;
+    renderSettings();
+  }
+});
+
+// ---------- heat pump power today ----------
+function drawUsage() {
+  const svg = $('usage');
+  if (!svg || svg.closest('[hidden]')) return;
+  svg.replaceChildren();
+  const u = settings?.usage;
+  const W = svg.clientWidth || 600, H = svg.clientHeight || 180;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  if (!u) {
+    svg.append(el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle' }, 'No usage data yet'));
+    $('usage-peak').textContent = '';
+    return;
+  }
+  const m = { top: 8, right: 4, bottom: 22, left: 34 };
+  const max = Math.max(1, Math.ceil(Math.max(...u.bars.map((b) => b ?? 0))));
+  const bw = (W - m.left - m.right) / u.bars.length;
+  const y = (v) => m.top + (1 - v / max) * (H - m.top - m.bottom);
+  for (let v = 0; v <= max; v += max > 4 ? 2 : 1) {
+    svg.append(el('line', { x1: m.left, x2: W - m.right, y1: y(v), y2: y(v), stroke: 'var(--grid)' }));
+    svg.append(el('text', { x: m.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, `${v} kW`));
+  }
+  const slot = (i) => `${String(Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`;
+  u.bars.forEach((v, i) => {
+    if (!v) return;
+    const r = el('rect', { x: m.left + i * bw + 1, width: Math.max(1, bw - 2), y: y(v), height: y(0) - y(v), rx: 2, fill: 'var(--series-1)' });
+    r.append(el('title', {}, `${slot(i)}–${slot(i + 1)}: ${v.toFixed(2)} kW`));
+    svg.append(r);
+  });
+  for (let h = 0; h <= 24; h += 6) {
+    const anchor = h === 0 ? 'start' : h === 24 ? 'end' : 'middle';
+    svg.append(el('text', { x: m.left + (h * 2) * bw, y: H - 6, 'text-anchor': anchor }, `${h}:00`));
+  }
+  const peak = u.bars.reduce((best, v, i) => ((v ?? 0) > (u.bars[best] ?? 0) ? i : best), 0);
+  $('usage-peak').textContent = u.bars[peak] ? `Peak ${u.bars[peak].toFixed(1)} kW at ${slot(peak)}` : 'Not running today';
+}
+
+let initialTab = 'overview';
+try { initialTab = location.hash.slice(1) || localStorage.getItem('tab') || 'overview'; } catch {}
+if (!document.querySelector(`[data-panel="${initialTab}"]`)) initialTab = 'overview';
+showTab(initialTab);
 
 loadState();
 loadHistory();
+loadSettings();
 setInterval(loadState, 10_000);
+setInterval(loadSettings, 15_000);
 setInterval(loadHistory, 60_000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadState(); loadHistory(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadState(); loadHistory(); loadSettings(); } });
 </script>
 </body>
 </html>

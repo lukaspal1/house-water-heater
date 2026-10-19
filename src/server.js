@@ -5,6 +5,7 @@ import { createInterface } from 'node:readline';
 import { join, extname, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Tecomat } from './tecomat.js';
+import { PAGES, ITEMS, USAGE, parseValue, parseUsage } from './settings.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC_DIR = join(ROOT, 'public');
@@ -12,6 +13,7 @@ const DATA_DIR = join(ROOT, 'data');
 const HISTORY_FILE = join(DATA_DIR, 'history.jsonl');
 const PORT = Number(process.env.PORT) || 8080;
 const POLL_MS = 15_000;
+const SETTINGS_POLL_MS = 60_000;
 const HISTORY_EVERY_MS = 60_000;
 
 // Value names on UVOD.XML, mapped from the controller's UVOD.XSL layout.
@@ -43,6 +45,52 @@ const plc = new Tecomat({
 let state = { online: false, updatedAt: null, error: 'Starting…' };
 let lastHistoryAt = 0;
 
+// Latest raw values of every controller page we read, keyed by page.
+const pageCache = {};
+let settingsError = null;
+
+async function readPage(page) {
+  const values = await plc.read(page);
+  pageCache[page] = { values, at: Date.now() };
+  return values;
+}
+
+// The settings pages change rarely, so they are read less often than UVOD.XML.
+async function pollSettings() {
+  for (const page of Object.values(PAGES)) {
+    if (page === PAGES.main) continue;
+    try {
+      await readPage(page);
+      settingsError = null;
+    } catch (err) {
+      settingsError = err.message;
+      console.error(new Date().toISOString(), `reading ${page} failed:`, err.message);
+    }
+  }
+}
+
+function settingsSnapshot() {
+  const values = {};
+  for (const [id, { page, name }] of Object.entries(ITEMS)) {
+    values[id] = parseValue(name, pageCache[page]?.values[name]);
+  }
+  const updated = Object.values(pageCache).map((p) => p.at);
+  return {
+    values,
+    usage: parseUsage(pageCache[USAGE.page]?.values),
+    updatedAt: updated.length ? Math.min(...updated) : null,
+    error: settingsError,
+  };
+}
+
+// Writes go one at a time so quick repeated taps step the value once per tap.
+let writeQueue = Promise.resolve();
+function queued(fn) {
+  const run = writeQueue.then(fn, fn);
+  writeQueue = run.catch(() => {});
+  return run;
+}
+
 function parse(raw) {
   const out = {};
   for (const [key, { name, type }] of Object.entries(FIELDS)) {
@@ -56,12 +104,14 @@ function parse(raw) {
 
 async function poll() {
   try {
-    const values = parse(await plc.read());
+    const values = parse(await readPage(PAGES.main));
     state = { online: true, updatedAt: Date.now(), error: null, ...values };
     if (Date.now() - lastHistoryAt >= HISTORY_EVERY_MS) {
       lastHistoryAt = Date.now();
       const { tuvTemp, heatingTemp, outdoorTemp, hpOutput, kwhHeating, kwhTuv } = values;
-      const row = { t: lastHistoryAt, tuvTemp, heatingTemp, outdoorTemp, hpOutput, kwhHeating, kwhTuv };
+      const room = ITEMS['heat.roomTemp'];
+      const roomTemp = parseValue(room.name, pageCache[room.page]?.values[room.name]);
+      const row = { t: lastHistoryAt, tuvTemp, heatingTemp, outdoorTemp, roomTemp, hpOutput, kwhHeating, kwhTuv };
       await appendFile(HISTORY_FILE, JSON.stringify(row) + '\n');
     }
   } catch (err) {
@@ -135,10 +185,37 @@ const server = createServer(async (req, res) => {
       const { id, on } = await readBody(req);
       const sw = SWITCHES[id];
       if (!sw || typeof on !== 'boolean') return sendJson(res, 400, { error: 'Unknown switch' });
-      await plc.write(sw.name, on ? 1 : 0);
+      await queued(() => plc.write(sw.name, on ? 1 : 0));
       console.log(new Date().toISOString(), `${sw.label} switched ${on ? 'ON' : 'OFF'}`);
       await poll();
       return sendJson(res, 200, state);
+    }
+    if (req.method === 'GET' && url.pathname === '/api/settings') {
+      return sendJson(res, 200, settingsSnapshot());
+    }
+    if (req.method === 'POST' && url.pathname === '/api/settings/step') {
+      const { id, dir } = await readBody(req);
+      const item = ITEMS[id];
+      const button = item && (dir === 'up' ? item.up : dir === 'down' ? item.down : null);
+      if (!button) return sendJson(res, 400, { error: 'Unknown setting' });
+      await queued(async () => {
+        await plc.pulse(button, item.page);
+        await readPage(item.page);
+      });
+      console.log(new Date().toISOString(), `${id} ${dir} → ${pageCache[item.page].values[item.name]}`);
+      return sendJson(res, 200, settingsSnapshot());
+    }
+    if (req.method === 'POST' && url.pathname === '/api/settings/toggle') {
+      const { id, on } = await readBody(req);
+      const item = ITEMS[id];
+      if (!item?.toggle || typeof on !== 'boolean') return sendJson(res, 400, { error: 'Unknown setting' });
+      await queued(async () => {
+        await plc.write(item.name, on ? 1 : 0, item.page);
+        await readPage(item.page);
+      });
+      console.log(new Date().toISOString(), `${id} set ${on ? 'ON' : 'OFF'}`);
+      if (item.page === PAGES.main) await poll();
+      return sendJson(res, 200, settingsSnapshot());
     }
     if (req.method === 'GET') return serveStatic(res, url.pathname);
     sendJson(res, 405, { error: 'Method not allowed' });
@@ -150,7 +227,9 @@ const server = createServer(async (req, res) => {
 
 await mkdir(DATA_DIR, { recursive: true });
 await poll();
+await pollSettings();
 setInterval(poll, POLL_MS);
+setInterval(pollSettings, SETTINGS_POLL_MS);
 server.listen(PORT, () => {
   console.log(`Dashboard running at http://localhost:${PORT}`);
 });

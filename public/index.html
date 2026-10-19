@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151514" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Home Heating</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f6f5f2;
+    --surface: #fcfcfb;
+    --border: #e4e2dc;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #7a7974;
+    --grid: #ebe9e4;
+    --accent: #2a78d6;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --good: #0ca30c;
+    --critical: #d03b3b;
+    --switch-off: #c9c7c0;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px rgb(0 0 0 / 0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #151514;
+      --surface: #1a1a19;
+      --border: #2e2e2b;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #8e8d86;
+      --grid: #2a2a27;
+      --accent: #3987e5;
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --switch-off: #46463f;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #151514;
+    --surface: #1a1a19;
+    --border: #2e2e2b;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8e8d86;
+    --grid: #2a2a27;
+    --accent: #3987e5;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --switch-off: #46463f;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-primary);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+  .status.ok .dot { background: var(--good); }
+  .status.bad .dot { background: var(--critical); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .chip {
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (min-width: 720px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: var(--shadow);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .card.wide { grid-column: span 2; }
+  .label { font-size: 13px; color: var(--text-secondary); margin: 0 0 6px; }
+  .value {
+    font-size: 34px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .value small { font-size: 16px; font-weight: 500; color: var(--text-secondary); margin-left: 2px; }
+  .sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .control-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 12px; }
+  .switch {
+    appearance: none;
+    border: 0;
+    cursor: pointer;
+    width: 52px;
+    height: 32px;
+    border-radius: 999px;
+    background: var(--switch-off);
+    position: relative;
+    transition: background 0.15s;
+    flex: none;
+  }
+  .switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    transition: transform 0.15s;
+  }
+  .switch[aria-checked="true"] { background: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(20px); }
+  .switch:disabled { opacity: 0.5; cursor: progress; }
+  .switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .switch-state { font-size: 14px; font-weight: 600; }
+
+  .confirm {
+    display: none;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--bg);
+    font-size: 14px;
+  }
+  .confirm.open { display: block; }
+  .confirm-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .btn {
+    flex: 1;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .section { margin-top: 20px; }
+  .chart-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  h2 { font-size: 16px; margin: 0; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .seg button {
+    border: 0;
+    background: var(--surface);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: 13px;
+    padding: 6px 12px;
+    min-height: 34px;
+    cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--border); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--text-secondary); margin: 4px 0 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 14px; height: 3px; border-radius: 2px; }
+
+  .chart-wrap { position: relative; }
+  #chart { display: block; width: 100%; height: 260px; touch-action: pan-y; }
+  #chart text { font-size: 11px; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
+  #chart .direct { font-size: 12px; fill: var(--text-secondary); }
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 13px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+    white-space: nowrap;
+    display: none;
+    z-index: 2;
+  }
+  .tooltip .t-time { color: var(--text-muted); margin-bottom: 4px; }
+  .tooltip .t-row { display: flex; align-items: center; gap: 6px; }
+  .tooltip .t-row b { margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
+  .empty { padding: 40px 0; text-align: center; color: var(--text-muted); font-size: 14px; }
+
+  details { margin-top: 10px; font-size: 13px; color: var(--text-secondary); }
+  summary { cursor: pointer; padding: 6px 0; }
+  .table-scroll { max-height: 280px; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  th { position: sticky; top: 0; background: var(--surface); color: var(--text-secondary); font-weight: 600; }
+
+  .error-banner {
+    display: none;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--critical);
+    color: var(--text-primary);
+    background: var(--surface);
+    font-size: 14px;
+  }
+  .error-banner.show { display: block; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Home Heating</h1>
+    <span class="status" id="status"><span class="dot"></span><span id="status-text">Connecting…</span></span>
+  </header>
+
+  <div class="error-banner" id="error" role="alert"></div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="grid">
+    <section class="card">
+      <p class="label">Hot water (TUV)</p>
+      <div class="value" id="tuvTemp">–</div>
+      <div class="control-row">
+        <span class="switch-state" id="tuv-state">–</span>
+        <button class="switch" role="switch" aria-checked="false" aria-label="Hot water" data-switch="tuv" disabled></button>
+      </div>
+      <div class="confirm" data-confirm="tuv"></div>
+    </section>
+
+    <section class="card">
+      <p class="label">Heat pump</p>
+      <div class="value" id="hpOutput">–</div>
+      <div class="sub">output</div>
+      <div class="control-row">
+        <span class="switch-state" id="heatpump-state">–</span>
+        <button class="switch" role="switch" aria-checked="false" aria-label="Heat pump" data-switch="heatpump" disabled></button>
+      </div>
+      <div class="confirm" data-confirm="heatpump"></div>
+    </section>
+
+    <section class="card">
+      <p class="label">Outdoor</p>
+      <div class="value" id="outdoorTemp">–</div>
+    </section>
+
+    <section class="card">
+      <p class="label">Heating water</p>
+      <div class="value" id="heatingTemp">–</div>
+      <div class="sub">Ekvitermní křivka</div>
+    </section>
+
+    <section class="card wide">
+      <p class="label">Energy used: heating</p>
+      <div class="value" id="kwhHeating">–</div>
+      <div class="sub" id="kwhHeating-delta"></div>
+    </section>
+
+    <section class="card wide">
+      <p class="label">Energy used: hot water</p>
+      <div class="value" id="kwhTuv">–</div>
+      <div class="sub" id="kwhTuv-delta"></div>
+    </section>
+  </div>
+
+  <section class="card section">
+    <div class="chart-head">
+      <h2>Temperatures</h2>
+      <div class="seg" role="group" aria-label="Time range">
+        <button data-hours="6" aria-pressed="false">6 h</button>
+        <button data-hours="24" aria-pressed="true">24 h</button>
+        <button data-hours="168" aria-pressed="false">7 d</button>
+        <button data-hours="720" aria-pressed="false">30 d</button>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="chart-wrap">
+      <svg id="chart" role="img" aria-label="Temperature history"></svg>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+    <details>
+      <summary>Show as table</summary>
+      <div class="table-scroll"><table id="table"></table></div>
+    </details>
+  </section>
+</main>
+
+<script>
+const SERIES = [
+  { key: 'tuvTemp', label: 'Hot water', color: 'var(--series-1)' },
+  { key: 'heatingTemp', label: 'Heating water', color: 'var(--series-2)' },
+  { key: 'outdoorTemp', label: 'Outdoor', color: 'var(--series-3)' },
+];
+const SWITCH_LABELS = { tuv: 'hot water', heatpump: 'the heat pump' };
+const $ = (id) => document.getElementById(id);
+const fmt = (v, digits = 1) => (v == null || Number.isNaN(v) ? '–' : v.toFixed(digits));
+const fmtInt = (v) => (v == null ? '–' : Math.round(v).toLocaleString());
+
+let state = null;
+let history = [];
+let rangeHours = 24;
+try { rangeHours = Number(localStorage.getItem('rangeHours')) || 24; } catch {}
+
+// ---------- live state ----------
+async function loadState() {
+  try {
+    const res = await fetch('api/state', { cache: 'no-store' });
+    render(await res.json());
+  } catch {
+    setStatus(false, 'Dashboard offline');
+  }
+}
+
+function setStatus(ok, text) {
+  $('status').className = 'status ' + (ok ? 'ok' : 'bad');
+  $('status-text').textContent = text;
+}
+
+function render(s) {
+  state = s;
+  const age = s.updatedAt ? Math.round((Date.now() - s.updatedAt) / 1000) : null;
+  setStatus(s.online, s.online ? `Live · ${age < 60 ? 'just now' : Math.round(age / 60) + ' min ago'}` : 'Heater not responding');
+  $('error').textContent = s.error ? `Problem reaching the heater: ${s.error}` : '';
+  $('error').classList.toggle('show', !!s.error && s.updatedAt == null);
+  if (s.updatedAt == null) return;
+
+  $('tuvTemp').innerHTML = `${fmt(s.tuvTemp)}<small>°C</small>`;
+  $('outdoorTemp').innerHTML = `${fmt(s.outdoorTemp)}<small>°C</small>`;
+  $('heatingTemp').innerHTML = `${fmt(s.heatingTemp)}<small>°C</small>`;
+  $('hpOutput').innerHTML = `${fmt(s.hpOutput, 0)}<small>%</small>`;
+  $('kwhHeating').innerHTML = `${fmtInt(s.kwhHeating)}<small>kWh</small>`;
+  $('kwhTuv').innerHTML = `${fmtInt(s.kwhTuv)}<small>kWh</small>`;
+
+  for (const key of ['tuv', 'heatpump']) {
+    const on = !!s.switches?.[key];
+    const btn = document.querySelector(`[data-switch="${key}"]`);
+    if (!btn.dataset.busy) {
+      btn.setAttribute('aria-checked', on);
+      btn.disabled = !s.online;
+    }
+    $(`${key}-state`).textContent = on ? 'On' : 'Off';
+  }
+
+  const chips = [];
+  if (s.mode) chips.push(s.mode);
+  if (s.summerMode) chips.push('☀ Summer mode');
+  if (s.circuit1) chips.push('Circuit 1 active');
+  if (s.plcTime) chips.push(`Controller clock ${s.plcTime}`);
+  $('chips').replaceChildren(...chips.map((t) => Object.assign(document.createElement('span'), { className: 'chip', textContent: t })));
+  renderEnergyDeltas();
+}
+
+// ---------- switches (tap → confirm → write) ----------
+document.querySelectorAll('[data-switch]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.switch;
+    const turnOn = btn.getAttribute('aria-checked') !== 'true';
+    const box = document.querySelector(`[data-confirm="${key}"]`);
+    box.innerHTML = `Turn ${SWITCH_LABELS[key]} <b>${turnOn ? 'ON' : 'OFF'}</b>?
+      <div class="confirm-actions"><button class="btn" data-act="cancel">Cancel</button>
+      <button class="btn primary" data-act="ok">Turn ${turnOn ? 'on' : 'off'}</button></div>`;
+    box.classList.add('open');
+    box.querySelector('[data-act="cancel"]').onclick = () => box.classList.remove('open');
+    box.querySelector('[data-act="ok"]').onclick = async () => {
+      box.classList.remove('open');
+      btn.dataset.busy = '1';
+      btn.disabled = true;
+      btn.setAttribute('aria-checked', turnOn);
+      try {
+        const res = await fetch('api/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: key, on: turnOn }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || 'Request failed');
+        delete btn.dataset.busy;
+        render(body);
+      } catch (err) {
+        delete btn.dataset.busy;
+        alert(`Could not switch ${SWITCH_LABELS[key]}: ${err.message}`);
+        loadState();
+      }
+    };
+  });
+});
+
+// ---------- history chart ----------
+async function loadHistory() {
+  try {
+    const res = await fetch(`api/history?hours=${rangeHours}`, { cache: 'no-store' });
+    history = await res.json();
+  } catch {
+    history = [];
+  }
+  drawChart();
+  renderTable();
+  renderEnergyDeltas();
+}
+
+function rangeLabel(h) {
+  return h < 24 ? `${h} h` : h === 24 ? '24 h' : `${h / 24} days`;
+}
+
+function renderEnergyDeltas() {
+  for (const key of ['kwhHeating', 'kwhTuv']) {
+    const rows = history.filter((r) => r[key] != null);
+    const el = $(`${key}-delta`);
+    if (rows.length < 2) { el.textContent = 'Total since install'; continue; }
+    const delta = rows[rows.length - 1][key] - rows[0][key];
+    el.textContent = `+${fmtInt(delta)} kWh in the last ${rangeLabel(rangeHours)}`;
+  }
+}
+
+document.querySelectorAll('.seg button').forEach((b) => {
+  b.setAttribute('aria-pressed', Number(b.dataset.hours) === rangeHours);
+  b.addEventListener('click', () => {
+    rangeHours = Number(b.dataset.hours);
+    try { localStorage.setItem('rangeHours', rangeHours); } catch {}
+    document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    loadHistory();
+  });
+});
+
+$('legend').innerHTML = SERIES.map((s) => `<span><i class="swatch" style="background:${s.color}"></i>${s.label}</span>`).join('');
+
+const svgNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs = {}, text) {
+  const node = document.createElementNS(svgNS, tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (text != null) node.textContent = text;
+  return node;
+}
+
+function timeLabel(t, spanMs) {
+  const d = new Date(t);
+  if (spanMs <= 36 * 3600_000) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+}
+
+let chartGeom = null;
+function drawChart() {
+  const svg = $('chart');
+  svg.replaceChildren();
+  const W = svg.clientWidth || 600;
+  const H = svg.clientHeight || 260;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  chartGeom = null;
+
+  if (history.length < 2) {
+    const fo = el('text', { x: W / 2, y: H / 2, 'text-anchor': 'middle' }, 'Collecting history. A new point is saved every minute.');
+    svg.append(fo);
+    return;
+  }
+
+  const labelRoom = W < 480 ? 0 : 92;
+  const m = { top: 10, right: 10 + labelRoom, bottom: 24, left: 34 };
+  const t0 = history[0].t, t1 = history[history.length - 1].t;
+  let lo = Infinity, hi = -Infinity;
+  for (const r of history) for (const s of SERIES) {
+    const v = r[s.key];
+    if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  }
+  lo = Math.floor((lo - 2) / 5) * 5;
+  hi = Math.ceil((hi + 2) / 5) * 5;
+  const x = (t) => m.left + ((t - t0) / Math.max(t1 - t0, 1)) * (W - m.left - m.right);
+  const y = (v) => m.top + (1 - (v - lo) / (hi - lo)) * (H - m.top - m.bottom);
+
+  // grid + y axis
+  const step = (hi - lo) > 40 ? 10 : 5;
+  for (let v = lo; v <= hi; v += step) {
+    svg.append(el('line', { x1: m.left, x2: W - m.right, y1: y(v), y2: y(v), stroke: 'var(--grid)', 'stroke-width': v === 0 ? 1.5 : 1 }));
+    svg.append(el('text', { x: m.left - 6, y: y(v) + 4, 'text-anchor': 'end' }, `${v}°`));
+  }
+  // x axis ticks
+  const ticks = W < 480 ? 3 : 5;
+  for (let i = 0; i <= ticks; i++) {
+    const t = t0 + ((t1 - t0) * i) / ticks;
+    const anchor = i === 0 ? 'start' : i === ticks ? 'end' : 'middle';
+    svg.append(el('text', { x: x(t), y: H - 6, 'text-anchor': anchor }, timeLabel(t, t1 - t0)));
+  }
+
+  // lines; break the line where samples are missing for more than 10 minutes
+  const gapMs = Math.max(10 * 60_000, ((t1 - t0) / history.length) * 5);
+  const lastPoints = [];
+  for (const s of SERIES) {
+    let d = '', prevT = null;
+    for (const r of history) {
+      const v = r[s.key];
+      if (v == null) { prevT = null; continue; }
+      d += `${prevT == null || r.t - prevT > gapMs ? 'M' : 'L'}${x(r.t).toFixed(1)},${y(v).toFixed(1)}`;
+      prevT = r.t;
+    }
+    svg.append(el('path', { d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    const last = [...history].reverse().find((r) => r[s.key] != null);
+    if (last) lastPoints.push({ s, y: y(last[s.key]), v: last[s.key] });
+  }
+
+  // direct labels at the line ends, nudged apart so they never overlap
+  if (labelRoom) {
+    lastPoints.sort((a, b) => a.y - b.y);
+    for (let i = 1; i < lastPoints.length; i++) {
+      if (lastPoints[i].y - lastPoints[i - 1].y < 15) lastPoints[i].y = lastPoints[i - 1].y + 15;
+    }
+    for (const p of lastPoints) {
+      svg.append(el('text', { class: 'direct', x: W - m.right + 8, y: p.y + 4 }, `${p.s.label}`));
+    }
+  }
+
+  // hover layer
+  const cross = el('line', { y1: m.top, y2: H - m.bottom, stroke: 'var(--text-muted)', 'stroke-width': 1, visibility: 'hidden' });
+  svg.append(cross);
+  const dots = SERIES.map((s) => {
+    const c = el('circle', { r: 4.5, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' });
+    svg.append(c);
+    return c;
+  });
+  chartGeom = { x, y, m, W, H, cross, dots, t0, t1 };
+}
+
+function nearestRow(t) {
+  let lo = 0, hi = history.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (history[mid].t < t) lo = mid; else hi = mid;
+  }
+  return Math.abs(history[lo].t - t) < Math.abs(history[hi].t - t) ? history[lo] : history[hi];
+}
+
+function showTip(clientX) {
+  if (!chartGeom) return;
+  const svg = $('chart');
+  const rect = svg.getBoundingClientRect();
+  const { x, y, m, W, cross, dots, t0, t1 } = chartGeom;
+  const px = ((clientX - rect.left) / rect.width) * W;
+  const t = t0 + ((px - m.left) / (W - m.left - m.right)) * (t1 - t0);
+  const row = nearestRow(Math.min(Math.max(t, t0), t1));
+  const cx = x(row.t);
+  cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility', 'visible');
+  SERIES.forEach((s, i) => {
+    const v = row[s.key];
+    if (v == null) { dots[i].setAttribute('visibility', 'hidden'); return; }
+    dots[i].setAttribute('cx', cx); dots[i].setAttribute('cy', y(v)); dots[i].setAttribute('visibility', 'visible');
+  });
+  const tip = $('tooltip');
+  const when = new Date(row.t).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  tip.innerHTML = `<div class="t-time">${when}</div>` + SERIES.map((s) =>
+    `<div class="t-row"><i class="swatch" style="background:${s.color}"></i>${s.label}<b>${fmt(row[s.key])} °C</b></div>`).join('');
+  tip.style.display = 'block';
+  const scale = rect.width / W;
+  const left = cx * scale;
+  const tipW = tip.offsetWidth;
+  tip.style.left = `${left + 12 + tipW > rect.width ? left - tipW - 12 : left + 12}px`;
+  tip.style.top = `${m.top}px`;
+}
+function hideTip() {
+  $('tooltip').style.display = 'none';
+  if (!chartGeom) return;
+  chartGeom.cross.setAttribute('visibility', 'hidden');
+  chartGeom.dots.forEach((d) => d.setAttribute('visibility', 'hidden'));
+}
+$('chart').addEventListener('pointermove', (e) => showTip(e.clientX));
+$('chart').addEventListener('pointerdown', (e) => showTip(e.clientX));
+$('chart').addEventListener('pointerleave', hideTip);
+
+function renderTable() {
+  const rows = history.slice(-200).reverse();
+  $('table').innerHTML =
+    `<thead><tr><th>Time</th>${SERIES.map((s) => `<th>${s.label} °C</th>`).join('')}<th>Output %</th></tr></thead><tbody>` +
+    rows.map((r) => `<tr><td>${new Date(r.t).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>` +
+      SERIES.map((s) => `<td>${fmt(r[s.key])}</td>`).join('') + `<td>${fmt(r.hpOutput, 0)}</td></tr>`).join('') +
+    '</tbody>';
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawChart, 150); });
+
+loadState();
+loadHistory();
+setInterval(loadState, 10_000);
+setInterval(loadHistory, 60_000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadState(); loadHistory(); } });
+</script>
+</body>
+</html>
